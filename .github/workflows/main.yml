@@ -15,28 +15,30 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate M3U
+    name: Validate M3U Playlist
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout private source repository
+      - name: Checkout ZooPLAY main repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ vars.SOURCE_REPOSITORY }}
           ref: main
-          token: ${{ secrets.SYNC_PAT }}
-          path: source
+          path: main-repo
           persist-credentials: false
 
-      - name: Validate M3U file
+      - name: Check M3U file
         shell: bash
         run: |
           set -euo pipefail
 
-          FILE="toffee.m3u"
+          FILE="main-repo/toffee.m3u"
+
+          echo "Checking file: $FILE"
 
           if [[ ! -f "$FILE" ]]; then
-            echo "::error::toffee.m3u was not found."
+            echo "::error::toffee.m3u was not found in the main repository root."
+            echo "Files available in the repository:"
+            find main-repo -maxdepth 3 -type f | sort
             exit 1
           fi
 
@@ -52,10 +54,10 @@ jobs:
 
           echo "M3U validation successful."
 
-      - name: Upload M3U artifact
+      - name: Upload validated playlist
         uses: actions/upload-artifact@v4
         with:
           name: Next-Version-M3U
-          path: source/toffee.m3u
+          path: main-repo/toffee.m3u
           retention-days: 1
           if-no-files-found: error
