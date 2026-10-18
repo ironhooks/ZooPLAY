@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          FILE="source/toffee.m3u"
+          FILE="toffee.m3u"
 
           if [[ ! -f "$FILE" ]]; then
             echo "::error::toffee.m3u was not found."
