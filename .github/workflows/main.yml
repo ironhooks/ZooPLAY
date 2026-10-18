@@ -7,54 +7,46 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: next-version
+  group: next-version-sync
   cancel-in-progress: false
 
 jobs:
-  validate:
-    name: Validate M3U Playlist
+  sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout ZooPLAY repository
+      - name: Checkout public repository
         uses: actions/checkout@v4
         with:
           ref: main
-          path: main-repo
-          persist-credentials: false
+          path: public-repo
 
-      - name: Validate M3U file
+      - name: Check source configuration
+        shell: bash
+        env:
+          SOURCE_REPOSITORY: ${{ vars.SOURCE_REPOSITORY }}
+          SOURCE_FILE: ${{ vars.SOURCE_FILE }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$SOURCE_REPOSITORY" || -z "$SOURCE_FILE" ]]; then
+            echo "::error::Configure SOURCE_REPOSITORY and SOURCE_FILE."
+            exit 1
+          fi
+
+          echo "Source configuration is present."
+
+      - name: Validate destination
         shell: bash
         run: |
           set -euo pipefail
 
-          FILE="main-repo/Next.m3u"
-
-          if [[ ! -f "$FILE" ]]; then
-            echo "::error::Next.m3u was not found."
-            find main-repo -maxdepth 2 -type f -not -path '*/.git/*'
+          if [[ ! -d public-repo/.git ]]; then
+            echo "::error::Public repository checkout failed."
             exit 1
           fi
 
-          if [[ ! -s "$FILE" ]]; then
-            echo "::error::Next.m3u is empty."
-            exit 1
-          fi
-
-          if ! head -n 1 "$FILE" | grep -q '^#EXTM3U'; then
-            echo "::error::Invalid M3U header."
-            exit 1
-          fi
-
-          echo "M3U validation successful."
-
-      - name: Upload M3U artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Next-Version-M3U
-          path: main-repo/Next.m3u
-          retention-days: 1
-          if-no-files-found: error
+          echo "Destination repository is ready."
