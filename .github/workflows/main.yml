@@ -1,8 +1,10 @@
+
 name: Next Version
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    # Test: 10:53 PM Bangladesh time = 16:53 UTC
+    - cron: "53 16 * * *"
   workflow_dispatch:
 
 permissions:
@@ -20,6 +22,9 @@ jobs:
     steps:
       - name: Checkout current repository
         uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
 
       - name: Checkout private repository
         uses: actions/checkout@v4
@@ -76,18 +81,19 @@ jobs:
       - name: Commit and Push Changes
         shell: bash
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
-          # Move or copy Next.m3u to the root of the current repository
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
           cp output/Next.m3u ./Next.m3u
-          
+
           git add Next.m3u
-          
-          # Check if there are actual changes before committing
+
           if git diff --staged --quiet; then
             echo "No changes to commit."
           else
             git commit -m "Auto-update Next.m3u [skip ci]"
-            git push
+            git push origin HEAD:main
           fi
