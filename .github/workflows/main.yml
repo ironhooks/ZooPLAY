@@ -4,7 +4,7 @@ name: Next Version
 on:
   schedule:
     # Test: 10:53 PM Bangladesh time = 16:53 UTC
-    - cron: "53 16 * * *"
+    - cron: "55 16 * * *"
   workflow_dispatch:
 
 permissions:
