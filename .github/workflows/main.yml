@@ -7,46 +7,58 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: next-version-sync
+  group: next-version
   cancel-in-progress: false
 
 jobs:
   sync:
+    name: Fetch and Validate Playlist
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout public repository
+      - name: Checkout private repository
         uses: actions/checkout@v4
         with:
+          repository: newzooplay/ZoFFee_ToFFee
           ref: main
-          path: public-repo
+          token: ${{ secrets.SYNC_PAT }}
+          path: private-source
+          persist-credentials: false
 
-      - name: Check source configuration
-        shell: bash
-        env:
-          SOURCE_REPOSITORY: ${{ vars.SOURCE_REPOSITORY }}
-          SOURCE_FILE: ${{ vars.SOURCE_FILE }}
-        run: |
-          set -euo pipefail
-
-          if [[ -z "$SOURCE_REPOSITORY" || -z "$SOURCE_FILE" ]]; then
-            echo "::error::Configure SOURCE_REPOSITORY and SOURCE_FILE."
-            exit 1
-          fi
-
-          echo "Source configuration is present."
-
-      - name: Validate destination
+      - name: Validate source playlist
         shell: bash
         run: |
           set -euo pipefail
 
-          if [[ ! -d public-repo/.git ]]; then
-            echo "::error::Public repository checkout failed."
+          FILE="private-source/toffee.m3u"
+
+          if [[ ! -f "$FILE" ]]; then
+            echo "::error::toffee.m3u was not found in the private repository root."
+            echo "Available files:"
+            find private-source -maxdepth 3 -type f \
+              -not -path '*/.git/*' | sort
             exit 1
           fi
 
-          echo "Destination repository is ready."
+          if [[ ! -s "$FILE" ]]; then
+            echo "::error::Playlist file is empty."
+            exit 1
+          fi
+
+          if ! head -n 1 "$FILE" | grep -q '^#EXTM3U'; then
+            echo "::error::Invalid M3U header."
+            exit 1
+          fi
+
+          echo "Playlist validation successful."
+
+      - name: Upload validated playlist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Next-Version-M3U
+          path: private-source/toffee.m3u
+          retention-days: 1
+          if-no-files-found: error
