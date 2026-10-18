@@ -19,31 +19,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout ZooPLAY main repository
+      - name: Checkout ZooPLAY repository
         uses: actions/checkout@v4
         with:
           ref: main
           path: main-repo
           persist-credentials: false
 
-      - name: Check M3U file
+      - name: Validate M3U file
         shell: bash
         run: |
           set -euo pipefail
 
-          FILE="main-repo/toffee.m3u"
-
-          echo "Checking file: $FILE"
+          FILE="main-repo/Next.m3u"
 
           if [[ ! -f "$FILE" ]]; then
-            echo "::error::toffee.m3u was not found in the main repository root."
-            echo "Files available in the repository:"
-            find main-repo -maxdepth 3 -type f | sort
+            echo "::error::Next.m3u was not found."
+            find main-repo -maxdepth 2 -type f -not -path '*/.git/*'
             exit 1
           fi
 
           if [[ ! -s "$FILE" ]]; then
-            echo "::error::toffee.m3u is empty."
+            echo "::error::Next.m3u is empty."
             exit 1
           fi
 
@@ -54,10 +51,10 @@ jobs:
 
           echo "M3U validation successful."
 
-      - name: Upload validated playlist
+      - name: Upload M3U artifact
         uses: actions/upload-artifact@v4
         with:
           name: Next-Version-M3U
-          path: main-repo/toffee.m3u
+          path: main-repo/Next.m3u
           retention-days: 1
           if-no-files-found: error
